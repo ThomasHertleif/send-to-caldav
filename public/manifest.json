@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Send to Cal",
+  "version": "1.0.0",
+  "description": "Create CalDAV events from any web page.",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "Send to Cal"
+  },
+  "options_ui": {
+    "page": "src/options/index.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "send-to-cal@thomas.local",
+      "strict_min_version": "109.0"
+    }
+  }
+}
