@@ -1,10 +1,6 @@
 // Listen for messages from the popup
 browser.runtime.onMessage.addListener(
-  (
-    message: { type: string },
-    _sender: unknown,
-    _sendResponse: (response: unknown) => void,
-  ) => {
+  (message: { type: string }, _sender, _sendResponse) => {
     if (message.type === "SCRAPE_PAGE") {
       const data = scrapePage();
       return Promise.resolve(data);
