@@ -6,7 +6,8 @@
 	"permissions": ["storage", "contextMenus", "activeTab", "scripting"],
 	"host_permissions": ["<all_urls>"],
 	"background": {
-		"scripts": ["background.js"]
+		"scripts": ["background.js"],
+		"type": "module"
 	},
 	"action": {
 		"default_popup": "src/popup/index.html",

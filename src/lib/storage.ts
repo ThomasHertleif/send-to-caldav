@@ -1,27 +1,31 @@
+import browser from "webextension-polyfill";
+
 export interface CalDavSettings {
-	serverUrl: string;
-	username: string;
-	password: string;
-	calendarPath?: string; // The specific calendar href if known
+  serverUrl: string;
+  username: string;
+  password: string;
+  calendarPath?: string; // The specific calendar href if known
 }
 
 export const getSettings = async (): Promise<CalDavSettings | null> => {
-	const result = await browser.storage.local.get([
-		"serverUrl",
-		"username",
-		"password",
-		"calendarPath",
-	]);
-	if (result.serverUrl && result.username && result.password) {
-		return result as CalDavSettings;
-	}
-	return null;
+  const result = await browser.storage.local.get([
+    "serverUrl",
+    "username",
+    "password",
+    "calendarPath",
+  ]);
+  if (result.serverUrl && result.username && result.password) {
+    return result as unknown as CalDavSettings;
+  }
+  return null;
 };
 
 export const saveSettings = async (settings: CalDavSettings): Promise<void> => {
-	await browser.storage.local.set(settings);
+  await browser.storage.local.set(
+    settings as unknown as Record<string, unknown>,
+  );
 };
 
 export const clearSettings = async (): Promise<void> => {
-	await browser.storage.local.clear();
+  await browser.storage.local.clear();
 };

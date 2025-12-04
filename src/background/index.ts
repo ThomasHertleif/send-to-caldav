@@ -1,4 +1,12 @@
 /// <reference types="firefox-webext-browser" />
+import browser from "webextension-polyfill";
+
+export type ContextMenuData = {
+  url?: string;
+  title: string;
+  selection: string;
+  timestamp: number;
+};
 
 browser.runtime.onInstalled.addListener(() => {
   browser.contextMenus.create({
@@ -10,28 +18,37 @@ browser.runtime.onInstalled.addListener(() => {
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "send-to-cal-ctx") {
-    // Determine the URL to use
     let targetUrl = info.pageUrl;
     let title = tab?.title || "";
-    // If a link was clicked, use the link URL instead of the page URL
+
+    // If a link was clicked
     if (info.linkUrl) {
       targetUrl = info.linkUrl;
       title = info.linkText || title;
     }
 
     // Store this context so the popup can pick it up
-    // We include a timestamp so the popup can decide if the data is fresh enough
-    browser.storage.local.set({
-      contextMenuData: {
-        url: targetUrl,
-        title,
-        selection: info.selectionText || "",
-        timestamp: Date.now(),
-      },
-    });
+    // Timestamp so the popup can decide if the data is fresh
+    const contextMenuData: ContextMenuData = {
+      url: targetUrl,
+      title,
+      selection: info.selectionText || "",
+      timestamp: Date.now(),
+    };
+    browser.storage.local.set({ contextMenuData });
 
     // Open the popup
-    // This is specific to Firefox and requires the user interaction (context menu click)
-    browser.action.openPopup();
+    // Firefox supports opening popup from context menu.
+    // Chrome requires opening a window.
+    if (browser.action.openPopup) {
+      browser.action.openPopup();
+    } else {
+      browser.windows.create({
+        url: browser.runtime.getURL("src/popup/index.html"),
+        type: "popup",
+        width: 380,
+        height: 600,
+      });
+    }
   }
 });

@@ -1,26 +1,32 @@
 {
-  "name": "send-to-cal",
-  "version": "1.0.0",
-  "description": "",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "npx @biomejs/biome lint --write",
-    "format": "npx @biomejs/biome format"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/firefox-webext-browser": "^143.0.0",
-    "@types/node": "^24.10.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.6"
-  },
-  "engines": {
-    "node": "24.11.1"
-  }
+	"name": "send-to-cal",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"build:firefox": "vite build && cp dist/manifest.firefox.json dist/manifest.json",
+		"build:chrome": "vite build && cp dist/manifest.chrome.json dist/manifest.json",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "npx @biomejs/biome lint --write",
+		"format": "npx @biomejs/biome format --write"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"webextension-polyfill": "^0.12.0"
+	},
+	"devDependencies": {
+		"@types/firefox-webext-browser": "^143.0.0",
+		"@types/node": "^24.10.1",
+		"@types/webextension-polyfill": "^0.12.4",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.6"
+	},
+	"engines": {
+		"node": "24.11.1"
+	}
 }

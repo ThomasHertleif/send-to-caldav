@@ -1,3 +1,4 @@
+import "webextension-polyfill";
 import { getSettings, saveSettings, type CalDavSettings } from "../lib/storage";
 import { CalDavClient } from "../lib/caldav";
 

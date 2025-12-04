@@ -1,15 +1,27 @@
-// Listen for messages from the popup
-browser.runtime.onMessage.addListener(
-  (message: { type: string }, _sender, _sendResponse) => {
-    if (message.type === "SCRAPE_PAGE") {
-      const data = scrapePage();
-      return Promise.resolve(data);
-    }
-    return false; // Return false if we didn't handle the message
-  },
-);
+import browser, { type Runtime } from "webextension-polyfill";
 
-function scrapePage() {
+export type ScrapedData = {
+  title: string;
+  description: string;
+};
+
+const listener = (
+  // biome-ignore lint/suspicious/noExplicitAny: Message content is unknown
+  message: any,
+  _sender: Runtime.MessageSender,
+  _sendResponse: (response?: unknown) => void,
+) => {
+  if (message && message.type === "SCRAPE_PAGE") {
+    const data = scrapePage();
+    return Promise.resolve(data);
+  }
+};
+
+// Listen for messages from the popup
+// biome-ignore lint/suspicious/noExplicitAny: webextension-polyfill types are strict
+browser.runtime.onMessage.addListener(listener as any);
+
+function scrapePage(): ScrapedData {
   let title = document.title;
   let description = "";
 
