@@ -4,7 +4,6 @@ export interface CalDavSettings {
 	serverUrl: string;
 	username: string;
 	password: string;
-	calendarPath?: string; // The specific calendar href if known
 }
 
 export const getSettings = async (): Promise<CalDavSettings | null> => {
@@ -12,7 +11,6 @@ export const getSettings = async (): Promise<CalDavSettings | null> => {
 		"serverUrl",
 		"username",
 		"password",
-		"calendarPath",
 	]);
 	if (result.serverUrl && result.username && result.password) {
 		return result as unknown as CalDavSettings;
