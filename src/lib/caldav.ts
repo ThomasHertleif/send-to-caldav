@@ -44,7 +44,7 @@ export class CalDavClient {
 			});
 
 			// 200 OK or 207 Multi-Status are successful responses for WebDAV
-			return response.ok || response.status === 207;
+			return response.ok;
 		} catch (error) {
 			console.error("CalDAV connection check failed:", error);
 			return false;
@@ -118,22 +118,13 @@ export class CalDavClient {
 			`SUMMARY:${summary}`,
 		];
 		if (description) {
-			extraLines += `DESCRIPTION:${description}\n`;
+			lines.push(`DESCRIPTION:${description}`);
 		}
 		if (event.url) {
-			extraLines += `URL:${event.url}\n`;
+			lines.push(`URL:${event.url}`);
 		}
+		lines.push("END:VEVENT", "END:VCALENDAR");
 
-		return `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//SendToCal//EN
-BEGIN:VEVENT
-UID:${uid}
-DTSTAMP:${dtStamp}
-DTSTART:${dtStart}
-DTEND:${dtEnd}
-SUMMARY:${summary}
-${extraLines}END:VEVENT
-END:VCALENDAR`;
+		return lines.join("\n");
 	}
 }
