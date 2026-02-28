@@ -26,7 +26,7 @@ let isContextDataLoaded = false;
 
 // Listen for storage changes (in case popup opens before background script saves data)
 browser.storage.onChanged.addListener((changes, area) => {
-	if (area === "local" && changes.contextMenuData?.newValue) {
+	if (area === "local" && changes.contextMenuData?.newValue && !isContextDataLoaded) {
 		const contextData = changes.contextMenuData.newValue as ContextMenuData;
 		// Only use if fresh (less than 10s old)
 		if (Date.now() - contextData.timestamp < 10000) {
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const storage = await browser.storage.local.get("contextMenuData");
 	const contextData = storage.contextMenuData as ContextMenuData;
 
-	if (contextData && Date.now() - contextData.timestamp < 10000) {
+	if (!isContextDataLoaded && contextData && Date.now() - contextData.timestamp < 10000) {
 		// Use context menu data if it's less than 10 seconds old
 		if (contextData.title) titleInput.value = contextData.title;
 		if (contextData.url) {
