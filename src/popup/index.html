@@ -4,16 +4,13 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Create Event</title>
+        <link rel="stylesheet" href="../shared/styles.css" />
         <style>
             body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    Helvetica, Arial, sans-serif;
-                width: 350px;
+                width: 380px;
                 margin: 0;
                 padding: 1rem;
                 background-color: #fff;
-                color: #333;
             }
             h2 {
                 margin-top: 0;
@@ -21,48 +18,18 @@
                 font-size: 1.25rem;
                 color: #2c3e50;
             }
-            .form-group {
-                margin-bottom: 1rem;
-            }
             label {
-                display: block;
-                margin-bottom: 0.25rem;
-                font-size: 0.875rem;
-                font-weight: 500;
-            }
-            input[type="text"],
-            input[type="datetime-local"],
-            textarea {
-                width: 100%;
-                padding: 0.5rem;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-sizing: border-box;
-                font-family: inherit;
                 font-size: 0.875rem;
             }
             textarea {
                 resize: vertical;
                 min-height: 60px;
             }
-            input:focus,
-            textarea:focus {
-                border-color: #3498db;
-                outline: none;
-                box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-            }
             .actions {
                 display: flex;
                 justify-content: flex-end;
                 gap: 0.5rem;
                 margin-top: 1rem;
-            }
-            button {
-                padding: 0.5rem 1rem;
-                border-radius: 4px;
-                font-size: 0.875rem;
-                cursor: pointer;
-                border: none;
             }
             button.primary {
                 background-color: #3498db;
@@ -79,21 +46,6 @@
             button.secondary:hover {
                 background-color: #e2e6ea;
             }
-            #status {
-                margin-top: 1rem;
-                padding: 0.5rem;
-                border-radius: 4px;
-                font-size: 0.875rem;
-                display: none;
-            }
-            .success {
-                background-color: #d4edda;
-                color: #155724;
-            }
-            .error {
-                background-color: #f8d7da;
-                color: #721c24;
-            }
             .loading-overlay {
                 position: absolute;
                 top: 0;
@@ -101,13 +53,25 @@
                 right: 0;
                 bottom: 0;
                 background: rgba(255, 255, 255, 0.8);
+                display: none;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                gap: 0.5rem;
                 z-index: 10;
-                display: none;
             }
-            .hidden {
-                display: none;
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .spinner {
+                width: 24px;
+                height: 24px;
+                border: 3px solid #ddd;
+                border-top-color: #3498db;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
             }
             #settings-warning {
                 background-color: #fff3cd;
@@ -121,6 +85,32 @@
                 color: #856404;
                 text-decoration: underline;
                 cursor: pointer;
+            }
+            @media (prefers-color-scheme: dark) {
+                body {
+                    background-color: #1e1e1e;
+                }
+                h2 {
+                    color: #a8c6e8;
+                }
+                .loading-overlay {
+                    background: rgba(30, 30, 30, 0.9);
+                }
+                button.secondary {
+                    background-color: #3d3d3d;
+                    color: #e0e0e0;
+                    border-color: #555;
+                }
+                button.secondary:hover {
+                    background-color: #4d4d4d;
+                }
+                #settings-warning {
+                    background-color: #3d3000;
+                    color: #ffc107;
+                }
+                #settings-link {
+                    color: #ffc107;
+                }
             }
         </style>
     </head>
@@ -167,7 +157,10 @@
 
         <div id="status"></div>
 
-        <div id="loading" class="loading-overlay">Saving...</div>
+        <div id="loading" class="loading-overlay">
+            <div class="spinner"></div>
+            <span>Saving...</span>
+        </div>
 
         <script type="module" src="./index.ts"></script>
     </body>
