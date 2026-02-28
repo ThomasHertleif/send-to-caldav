@@ -14,11 +14,11 @@ export class CalDavClient {
 
 	constructor(settings: CalDavSettings) {
 		this.settings = settings;
-		// Basic Auth header generation
-		// Note: In a production environment, consider handling Unicode characters more robustly
-		this.authHeader = `Basic ${btoa(
-			`${settings.username}:${settings.password}`,
-		)}`;
+		// Basic Auth header generation with UTF-8 support
+		const credentials = `${settings.username}:${settings.password}`;
+		const encoded = new TextEncoder().encode(credentials);
+		const binary = String.fromCharCode(...encoded);
+		this.authHeader = `Basic ${btoa(binary)}`;
 	}
 
 	/**
