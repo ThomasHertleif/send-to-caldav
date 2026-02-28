@@ -142,6 +142,13 @@ form.addEventListener("submit", async (e) => {
 	const settings = await getSettings();
 	if (!settings) return;
 
+	const startDate = new Date(startInput.value);
+	const endDate = new Date(endInput.value);
+	if (endDate <= startDate) {
+		showStatus("End time must be after start time.", "error");
+		return;
+	}
+
 	showLoading(true);
 	hideStatus();
 
