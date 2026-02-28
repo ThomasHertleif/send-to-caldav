@@ -16,6 +16,7 @@ const cancelBtn = document.getElementById("cancel-btn") as HTMLButtonElement;
 
 // Inputs
 const titleInput = document.getElementById("title") as HTMLInputElement;
+const allDayCheckbox = document.getElementById("all-day") as HTMLInputElement;
 const startInput = document.getElementById("start") as HTMLInputElement;
 const endInput = document.getElementById("end") as HTMLInputElement;
 const descInput = document.getElementById("description") as HTMLTextAreaElement;
@@ -56,18 +57,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-	// Initialize default times (start: next hour, end: start + 1h)
-	const now = new Date();
-	now.setMinutes(0, 0, 0);
-	now.setHours(now.getHours() + 1);
-	const startStr = toLocalIsoString(now);
+  // Initialize default times (start: next hour, end: start + 1h)
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  now.setHours(now.getHours() + 1);
+  const startStr = toLocalIsoString(now);
 
-	const end = new Date(now);
-	end.setHours(end.getHours() + 1);
-	const endStr = toLocalIsoString(end);
+  const end = new Date(now);
+  end.setHours(end.getHours() + 1);
+  const endStr = toLocalIsoString(end);
 
-	startInput.value = startStr;
-	endInput.value = endStr;
+  startInput.value = startStr;
+  endInput.value = endStr;
+
+  // Wire up all-day checkbox
+  allDayCheckbox.addEventListener("change", () => {
+    if (allDayCheckbox.checked) {
+      // Extract the date portion from the current datetime-local value, falling
+      // back to today if nothing is set yet.
+      const dateOnly = startInput.value
+        ? startInput.value.slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+
+      startInput.type = "date";
+      startInput.value = dateOnly;
+      endInput.type = "date";
+      endInput.value = dateOnly;
+    } else {
+      // Restore datetime-local. Re-use the selected date with a sensible time.
+      const selectedDate =
+        startInput.value || new Date().toISOString().slice(0, 10);
+      const restored = restoreDateTime(selectedDate);
+
+      startInput.type = "datetime-local";
+      startInput.value = toLocalIsoString(restored.start);
+      endInput.type = "datetime-local";
+      endInput.value = toLocalIsoString(restored.end);
+    }
+  });
 
   // Check for context menu data first
   const storage = await browser.storage.local.get("contextMenuData");
@@ -183,23 +210,39 @@ form.addEventListener("submit", async (e) => {
   const settings = await getSettings();
   if (!settings) return;
 
-	const startDate = new Date(startInput.value);
-	const endDate = new Date(endInput.value);
-	if (endDate <= startDate) {
-		showStatus("End time must be after start time.", "error");
-		return;
-	}
+  if (allDayCheckbox.checked) {
+    if (endInput.value < startInput.value) {
+      showStatus("End date must be on or after start date.", "error");
+      return;
+    }
+  } else {
+    const startDate = new Date(startInput.value);
+    const endDate = new Date(endInput.value);
+    if (endDate <= startDate) {
+      showStatus("End time must be after start time.", "error");
+      return;
+    }
+  }
 
   showLoading(true);
   hideStatus();
 
-	const event: CalendarEvent = {
-		title: titleInput.value,
-		start: new Date(startInput.value).toISOString(),
-		end: new Date(endInput.value).toISOString(),
-		description: descInput.value,
-		url: urlInput.value,
-	};
+  const event: CalendarEvent = allDayCheckbox.checked
+    ? {
+        title: titleInput.value,
+        start: startInput.value, // "YYYY-MM-DD" from date input
+        end: endInput.value, // "YYYY-MM-DD" from date input
+        allDay: true,
+        description: descInput.value || undefined,
+        url: urlInput.value || undefined,
+      }
+    : {
+        title: titleInput.value,
+        start: new Date(startInput.value).toISOString(),
+        end: new Date(endInput.value).toISOString(),
+        description: descInput.value || undefined,
+        url: urlInput.value || undefined,
+      };
 
   try {
     const client = new CalDavClient(settings);
@@ -221,10 +264,35 @@ form.addEventListener("submit", async (e) => {
 });
 
 function toLocalIsoString(date: Date): string {
-	// datetime-local expects YYYY-MM-DDThh:mm
-	const offset = date.getTimezoneOffset() * 60000;
-	const localIso = new Date(date.getTime() - offset).toISOString().slice(0, 16);
-	return localIso;
+  // datetime-local expects YYYY-MM-DDThh:mm
+  const offset = date.getTimezoneOffset() * 60000;
+  const localIso = new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  return localIso;
+}
+
+/**
+ * Given a YYYY-MM-DD date string, return sensible start/end Date objects for
+ * restoring datetime-local inputs after the user unchecks "All day".
+ * If the date is today, snap to the next whole hour; otherwise default to 9 AM.
+ */
+function restoreDateTime(dateOnly: string): { start: Date; end: Date } {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let start: Date;
+
+  if (dateOnly === todayStr) {
+    // Snap to next whole hour, same as the initial default
+    start = new Date();
+    start.setMinutes(0, 0, 0);
+    start.setHours(start.getHours() + 1);
+  } else {
+    // Use 9:00 AM local time on the selected date
+    start = new Date(`${dateOnly}T09:00:00`);
+  }
+
+  const end = new Date(start);
+  end.setHours(end.getHours() + 1);
+
+  return { start, end };
 }
 
 function showLoading(show: boolean) {

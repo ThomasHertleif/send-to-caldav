@@ -20,6 +20,7 @@ label {
 input[type="text"],
 input[type="url"],
 input[type="password"],
+input[type="date"],
 input[type="datetime-local"],
 textarea {
     width: 100%;
@@ -86,6 +87,7 @@ button:hover {
     input[type="text"],
     input[type="url"],
     input[type="password"],
+    input[type="date"],
     input[type="datetime-local"],
     textarea {
         background-color: #2d2d2d;
