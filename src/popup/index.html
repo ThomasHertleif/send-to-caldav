@@ -98,6 +98,33 @@
                 text-decoration: underline;
                 cursor: pointer;
             }
+            .time-suggestions {
+                margin-bottom: 0.75rem;
+            }
+            .suggestions-label {
+                font-size: 0.75rem;
+                color: #888;
+            }
+            .suggestion-chip {
+                display: block;
+                width: 100%;
+                text-align: left;
+                padding: 0.375rem 0.5rem;
+                margin-top: 0.25rem;
+                background: #f0f7ff;
+                border: 1px solid #c8ddf0;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                color: #2c3e50;
+            }
+            .suggestion-chip:hover {
+                background: #d6eaff;
+            }
+            .suggestion-chip .chip-label {
+                color: #888;
+                font-size: 0.7rem;
+            }
             @media (prefers-color-scheme: dark) {
                 body {
                     background-color: #1e1e1e;
@@ -122,6 +149,17 @@
                 }
                 #settings-link {
                     color: #ffc107;
+                }
+                .suggestion-chip {
+                    background: #2a3a4a;
+                    border-color: #3a5068;
+                    color: #c8ddf0;
+                }
+                .suggestion-chip:hover {
+                    background: #34495e;
+                }
+                .suggestion-chip .chip-label {
+                    color: #8899aa;
                 }
             }
         </style>
@@ -155,6 +193,11 @@
             <div class="form-group">
                 <label for="end">End</label>
                 <input type="datetime-local" id="end" required />
+            </div>
+
+            <div id="time-suggestions" class="time-suggestions hidden">
+                <span class="suggestions-label">Suggested times from page</span>
+                <div id="suggestions-list"></div>
             </div>
 
             <div class="form-group">
