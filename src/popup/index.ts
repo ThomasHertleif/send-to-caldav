@@ -2,7 +2,6 @@ import browser from "webextension-polyfill";
 import { getSettings } from "../lib/storage";
 import { CalDavClient, type CalendarEvent } from "../lib/caldav";
 import type { ContextMenuData } from "../background";
-import type { ScrapedData } from "../content";
 
 const form = document.getElementById("event-form") as HTMLFormElement;
 const settingsWarning = document.getElementById(
@@ -26,7 +25,11 @@ let isContextDataLoaded = false;
 
 // Listen for storage changes (in case popup opens before background script saves data)
 browser.storage.onChanged.addListener((changes, area) => {
-	if (area === "local" && changes.contextMenuData?.newValue && !isContextDataLoaded) {
+	if (
+		area === "local" &&
+		changes.contextMenuData?.newValue &&
+		!isContextDataLoaded
+	) {
 		const contextData = changes.contextMenuData.newValue as ContextMenuData;
 		// Only use if fresh (less than 10s old)
 		if (Date.now() - contextData.timestamp < 10000) {
@@ -70,7 +73,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const storage = await browser.storage.local.get("contextMenuData");
 	const contextData = storage.contextMenuData as ContextMenuData;
 
-	if (!isContextDataLoaded && contextData && Date.now() - contextData.timestamp < 10000) {
+	if (
+		!isContextDataLoaded &&
+		contextData &&
+		Date.now() - contextData.timestamp < 10000
+	) {
 		// Use context menu data if it's less than 10 seconds old
 		if (contextData.title) titleInput.value = contextData.title;
 		if (contextData.url) {
@@ -102,23 +109,57 @@ document.addEventListener("DOMContentLoaded", async () => {
 					descInput.value = `Source: ${tab.url}`;
 				}
 
-				// Try to get parsed data from content script
+				// Scrape page data on demand via scripting API
 				if (tab.id) {
 					try {
-						const response = (await browser.tabs.sendMessage(tab.id, {
-							type: "SCRAPE_PAGE",
-						})) as ScrapedData | false;
+						const results = await browser.scripting.executeScript({
+							target: { tabId: tab.id },
+							func: () => {
+								try {
+									let title = document.title;
+									let description = "";
+									const ogTitle = document.querySelector(
+										'meta[property="og:title"]',
+									);
+									if (ogTitle) {
+										const content = ogTitle.getAttribute("content");
+										if (content) title = content;
+									}
+									const metaDesc = document.querySelector(
+										'meta[name="description"]',
+									);
+									const ogDesc = document.querySelector(
+										'meta[property="og:description"]',
+									);
+									if (ogDesc) {
+										const content = ogDesc.getAttribute("content");
+										if (content) description = content;
+									} else if (metaDesc) {
+										const content = metaDesc.getAttribute("content");
+										if (content) description = content;
+									}
+									return {
+										title: title.trim(),
+										description: description.trim(),
+									};
+								} catch {
+									return null;
+								}
+							},
+						});
+						const response = results?.[0]?.result as {
+							title: string;
+							description: string;
+						} | null;
 						if (response && !isContextDataLoaded) {
 							if (response.title) titleInput.value = response.title;
 							if (response.description)
 								descInput.value =
 									response.description +
 									(tab.url ? `\n\nSource: ${tab.url}` : "");
-							// If we had date parsing logic in content script, we would use it here
 						}
 					} catch (e) {
-						// Content script might not be loaded or ready, ignore
-						console.log("Could not communicate with content script", e);
+						console.log("Could not scrape page data", e);
 					}
 				}
 			}

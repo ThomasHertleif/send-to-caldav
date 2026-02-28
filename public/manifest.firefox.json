@@ -17,12 +17,6 @@
 		"page": "src/options/index.html",
 		"open_in_tab": true
 	},
-	"content_scripts": [
-		{
-			"matches": ["<all_urls>"],
-			"js": ["content.js"]
-		}
-	],
 	"browser_specific_settings": {
 		"gecko": {
 			"id": "send-to-cal@thomas.local",
