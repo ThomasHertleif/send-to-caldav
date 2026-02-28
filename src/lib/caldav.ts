@@ -125,6 +125,35 @@ export class CalDavClient {
 		}
 		lines.push("END:VEVENT", "END:VCALENDAR");
 
-		return lines.join("\n");
+		return lines.map((line) => this.foldLine(line)).join("\n");
+	}
+
+	/** Fold a content line at 75 octets per RFC 5545 §3.1 */
+	private foldLine(line: string): string {
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(line);
+		if (bytes.length <= 75) return line;
+
+		const decoder = new TextDecoder();
+		const parts: string[] = [];
+		let offset = 0;
+		let limit = 75;
+
+		while (offset < bytes.length) {
+			let end = Math.min(offset + limit, bytes.length);
+			// Avoid splitting multi-byte UTF-8 characters
+			while (
+				end > offset &&
+				end < bytes.length &&
+				(bytes[end] & 0xc0) === 0x80
+			) {
+				end--;
+			}
+			parts.push(decoder.decode(bytes.slice(offset, end)));
+			offset = end;
+			limit = 74; // continuation lines have a leading space
+		}
+
+		return parts.join("\n ");
 	}
 }
