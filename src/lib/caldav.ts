@@ -55,8 +55,9 @@ export class CalDavClient {
 	 * Creates a new event on the CalDAV server.
 	 */
 	async createEvent(event: CalendarEvent): Promise<void> {
-		const icsContent = this.generateIcs(event);
-		const filename = `${this.generateUid()}.ics`;
+		const uid = this.generateUid();
+		const icsContent = this.generateIcs(event, uid);
+		const filename = `${uid}.ics`;
 
 		// Ensure URL ends with /
 		const baseUrl = this.settings.serverUrl.endsWith("/")
@@ -93,8 +94,7 @@ export class CalDavClient {
 		return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
 	}
 
-	private generateIcs(event: CalendarEvent): string {
-		const uid = this.generateUid();
+	private generateIcs(event: CalendarEvent, uid: string): string {
 		const dtStamp = this.formatDate(new Date().toISOString());
 		const dtStart = this.formatDate(event.start);
 		const dtEnd = this.formatDate(event.end);
@@ -106,8 +106,17 @@ export class CalDavClient {
 		const summary = escapeText(event.title);
 		const description = event.description ? escapeText(event.description) : "";
 
-		// Build optional lines
-		let extraLines = "";
+		const lines = [
+			"BEGIN:VCALENDAR",
+			"VERSION:2.0",
+			"PRODID:-//SendToCal//EN",
+			"BEGIN:VEVENT",
+			`UID:${uid}`,
+			`DTSTAMP:${dtStamp}`,
+			`DTSTART:${dtStart}`,
+			`DTEND:${dtEnd}`,
+			`SUMMARY:${summary}`,
+		];
 		if (description) {
 			extraLines += `DESCRIPTION:${description}\n`;
 		}
