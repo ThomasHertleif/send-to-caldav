@@ -4,6 +4,7 @@ A browser extension that allows you to create CalDAV calendar events directly fr
 
 ## Features
 - Create calendar events from the current page, link or selected text. (context menu or toolbar button) 
+- Tries to extract event details (description, date, time) from the page content.
 
 ## Build and Install
 
