@@ -8,6 +8,12 @@ import {
   extractDateSuggestions,
 } from "../lib/datetime";
 import { renderSuggestions, applySuggestion } from "./suggestions";
+import {
+  type DescriptionSuggestion,
+  buildDescription,
+  extractDescriptionSuggestions,
+  truncateText,
+} from "../lib/description";
 
 const form = document.getElementById("event-form") as HTMLFormElement;
 const settingsWarning = document.getElementById(
@@ -25,6 +31,12 @@ const suggestionsContainer = document.getElementById(
 const suggestionsList = document.getElementById(
   "suggestions-list",
 ) as HTMLDivElement;
+const descSuggestionsContainer = document.getElementById(
+  "desc-suggestions",
+) as HTMLDivElement;
+const descSuggestionsList = document.getElementById(
+  "desc-suggestions-list",
+) as HTMLDivElement;
 
 // Inputs
 const titleInput = document.getElementById("title") as HTMLInputElement;
@@ -38,25 +50,39 @@ let isContextDataLoaded = false;
 
 // Listen for storage changes (in case popup opens before background script saves data)
 browser.storage.onChanged.addListener((changes, area) => {
-  if (
-    area === "local" &&
-    changes.contextMenuData?.newValue &&
-    !isContextDataLoaded
-  ) {
+  if (area !== "local") return;
+
+  if (changes.contextMenuData?.newValue && !isContextDataLoaded) {
     const contextData = changes.contextMenuData.newValue as ContextMenuData;
     // Only use if fresh (less than 10s old)
     if (Date.now() - contextData.timestamp < 10000) {
       isContextDataLoaded = true;
-      if (contextData.title) titleInput.value = contextData.title;
+      // If the user selected text, use it as the event title
+      if (contextData.selection) {
+        titleInput.value = truncateText(contextData.selection, 100);
+      } else if (contextData.title) {
+        titleInput.value = contextData.title;
+      }
       if (contextData.url) {
         urlInput.value = contextData.url;
-        descInput.value = `Source: ${contextData.url}`;
       }
-      if (contextData.selection) {
-        descInput.value = `${contextData.selection}\n\nSource: ${contextData.url}`;
-      }
+      // Description starts with just the source URL; sibling text (if any)
+      // will be filled in when it arrives via contextMenuSiblingText
+      descInput.value = buildDescription("", contextData.url);
       browser.storage.local.remove("contextMenuData");
     }
+  }
+
+  // Sibling text arrives asynchronously – pre-fill it as the description body
+  if (changes.contextMenuSiblingText?.newValue) {
+    const { text, timestamp } = changes.contextMenuSiblingText.newValue as {
+      text: string;
+      timestamp: number;
+    };
+    if (Date.now() - timestamp < 10000 && text) {
+      descInput.value = buildDescription(text, urlInput.value || undefined);
+    }
+    browser.storage.local.remove("contextMenuSiblingText");
   }
 });
 
@@ -110,16 +136,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     contextData &&
     Date.now() - contextData.timestamp < 10000
   ) {
-    if (contextData.title) titleInput.value = contextData.title;
+    // If the user selected text, use it as the event title
+    if (contextData.selection) {
+      titleInput.value = truncateText(contextData.selection, 100);
+    } else if (contextData.title) {
+      titleInput.value = contextData.title;
+    }
     if (contextData.url) {
       urlInput.value = contextData.url;
-      descInput.value = `Source: ${contextData.url}`;
     }
-    if (contextData.selection) {
-      descInput.value = `${contextData.selection}\n\nSource: ${contextData.url}`;
-    }
+    // Description starts with just the source URL; sibling text (if any)
+    // will be filled in below from contextMenuSiblingText
+    descInput.value = buildDescription("", contextData.url);
     isContextDataLoaded = true;
     await browser.storage.local.remove("contextMenuData");
+  }
+
+  // Sibling text may already be in storage if the background script
+  // finished extraction before the popup loaded – pre-fill it as description body.
+  const siblingStorage = await browser.storage.local.get(
+    "contextMenuSiblingText",
+  );
+  const siblingData = siblingStorage.contextMenuSiblingText as
+    | { text: string; timestamp: number }
+    | undefined;
+  if (siblingData && Date.now() - siblingData.timestamp < 10000) {
+    descInput.value = buildDescription(
+      siblingData.text,
+      urlInput.value || undefined,
+    );
+    await browser.storage.local.remove("contextMenuSiblingText");
   }
 
   // Get active tab (used for scraping and date extraction)
@@ -138,7 +184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (tab.title) titleInput.value = tab.title;
       if (tab.url) {
         urlInput.value = tab.url;
-        descInput.value = `Source: ${tab.url}`;
+        descInput.value = buildDescription("", tab.url);
       }
 
       // Scrape OG/meta title + description
@@ -182,10 +228,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           } | null;
           if (response && !isContextDataLoaded) {
             if (response.title) titleInput.value = response.title;
-            if (response.description)
-              descInput.value =
-                response.description +
-                (tab.url ? `\n\nSource: ${tab.url}` : "");
+            if (response.description) {
+              descInput.value = buildDescription(
+                response.description,
+                tab.url || undefined,
+              );
+            }
           }
         } catch (e) {
           console.log("Could not scrape page data", e);
@@ -206,6 +254,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           suggestionsList,
           (s) => applySuggestion(s, startInput, endInput, allDayCheckbox),
         );
+      }
+    });
+
+    // Extract description suggestions from the page.
+    // For context-menu flows the sibling text chip is already shown;
+    // page-level suggestions are appended alongside it.
+    extractDescriptionSuggestions(activeTabId).then((suggestions) => {
+      if (suggestions.length > 0) {
+        showDescriptionSuggestions(suggestions);
       }
     });
   }
@@ -286,4 +343,54 @@ function showStatus(msg: string, type: "success" | "error") {
 
 function hideStatus() {
   statusDiv.style.display = "none";
+}
+
+/**
+ * Render description suggestion chips. Clicking a chip replaces the
+ * description body while preserving the Source URL line.
+ * Chips are appended (not replaced) so sibling-text and page-level
+ * suggestions can arrive independently.
+ */
+function showDescriptionSuggestions(suggestions: DescriptionSuggestion[]) {
+  // Collect existing chip texts so we don't add duplicates
+  const existing = new Set(
+    Array.from(
+      descSuggestionsList.querySelectorAll<HTMLElement>(".suggestion-chip"),
+    ).map((el) => el.dataset.text),
+  );
+
+  for (const suggestion of suggestions) {
+    if (existing.has(suggestion.text)) continue;
+    existing.add(suggestion.text);
+
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "suggestion-chip";
+    chip.dataset.text = suggestion.text;
+
+    const preview =
+      suggestion.text.length > 80
+        ? `${suggestion.text.slice(0, 80)}…`
+        : suggestion.text;
+
+    chip.innerHTML =
+      `<span class="chip-label">${suggestion.source}</span>` +
+      `<span class="desc-chip-preview">${preview}</span>`;
+
+    chip.addEventListener("click", () =>
+      applyDescriptionSuggestion(suggestion.text),
+    );
+    descSuggestionsList.appendChild(chip);
+  }
+
+  descSuggestionsContainer.classList.remove("hidden");
+}
+
+/**
+ * Replace the description field body with the given text, keeping the
+ * "Source: <url>" line at the end.
+ */
+function applyDescriptionSuggestion(text: string) {
+  const url = urlInput.value;
+  descInput.value = buildDescription(text, url || undefined);
 }

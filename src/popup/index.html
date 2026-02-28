@@ -125,6 +125,16 @@
                 color: #888;
                 font-size: 0.7rem;
             }
+            .suggestion-chip .desc-chip-preview {
+                display: block;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                font-size: 0.75rem;
+                color: #666;
+                margin-top: 0.125rem;
+            }
             @media (prefers-color-scheme: dark) {
                 body {
                     background-color: #1e1e1e;
@@ -160,6 +170,9 @@
                 }
                 .suggestion-chip .chip-label {
                     color: #8899aa;
+                }
+                .suggestion-chip .desc-chip-preview {
+                    color: #99aabb;
                 }
             }
         </style>
@@ -203,6 +216,11 @@
             <div class="form-group">
                 <label for="description">Description</label>
                 <textarea id="description"></textarea>
+            </div>
+
+            <div id="desc-suggestions" class="time-suggestions hidden">
+                <span class="suggestions-label">Suggested descriptions</span>
+                <div id="desc-suggestions-list"></div>
             </div>
 
             <input type="hidden" id="url" />
