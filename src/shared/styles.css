@@ -1,0 +1,105 @@
+/* Shared styles for popup and options pages */
+
+body {
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+        sans-serif;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="url"],
+input[type="password"],
+input[type="datetime-local"],
+textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.875rem;
+    background-color: #fff;
+    color: #333;
+}
+
+input:focus,
+textarea:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    background-color: #3498db;
+    color: white;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#status {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    display: none;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="password"],
+    input[type="datetime-local"],
+    textarea {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+
+    .success {
+        background-color: #1a3a22;
+        color: #75c898;
+    }
+
+    .error {
+        background-color: #3a1a1c;
+        color: #e07b80;
+    }
+}
